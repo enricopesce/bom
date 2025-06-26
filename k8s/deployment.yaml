@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vm-assessment-bom
+  namespace: vm-assessment
+  labels:
+    app.kubernetes.io/name: vm-assessment-bom
+    app.kubernetes.io/component: web-app
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vm-assessment-bom
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vm-assessment-bom
+        app.kubernetes.io/component: web-app
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: vm-assessment-bom
+        image: vm-assessment-bom:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: vm-assessment-config
+              key: APP_ENV
+        - name: WORKERS
+          valueFrom:
+            configMapKeyRef:
+              name: vm-assessment-config
+              key: WORKERS
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: vm-assessment-config
+              key: PORT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: vm-assessment-config
+              key: LOG_LEVEL
+        volumeMounts:
+        - name: upload-storage
+          mountPath: /app/static/uploads
+        - name: logs-storage
+          mountPath: /app/logs
+        - name: pricing-config
+          mountPath: /app/pricing.json
+          subPath: pricing.json
+          readOnly: true
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: upload-storage
+        emptyDir:
+          sizeLimit: 10Gi
+      - name: logs-storage
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: pricing-config
+        configMap:
+          name: vm-assessment-pricing
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help & Documentation - VM Assessment BOM Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .help-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0 40px;
+        }
+        .help-section {
+            padding: 40px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .help-section:last-child {
+            border-bottom: none;
+        }
+        .step-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #0d6efd;
+        }
+        .step-number {
+            background: #0d6efd;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .faq-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .format-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="help-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold mb-3">
+                        <i class="fas fa-question-circle me-3"></i>Help & Documentation
+                    </h1>
+                    <p class="lead mb-0">
+                        Learn how to use the VM Assessment BOM Generator to create professional Oracle Cloud Infrastructure reports
+                    </p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <a href="/" class="btn btn-light btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Back to Generator
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Getting Started -->
+        <div class="help-section">
+            <h2 class="mb-4">
+                <i class="fas fa-play-circle text-primary me-2"></i>
+                Getting Started
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h5>Export RVTools Data</h5>
+                        <p class="mb-0">Use RVTools to export your VMware environment data as a ZIP file containing all VM information, CPU, memory, disk, and network details.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h5>Upload ZIP File</h5>
+                        <p class="mb-0">Drag and drop your RVTools ZIP export file onto our secure upload interface or use the file browser to select it.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h5>Select Report Formats</h5>
+                        <p class="mb-0">Choose the report formats you need: Sales Excel for presentations, Technical Excel for analysis, CSV for data processing, or Text for summaries.</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="step-card">
+                        <div class="step-number">4</div>
+                        <h5>Download Results</h5>
+                        <p class="mb-0">Once processing is complete, download your professional BOM reports with Oracle Cloud Infrastructure pricing and migration recommendations.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Formats -->
+        <div class="help-section">
+            <h2 class="mb-4">
+                <i class="fas fa-file-alt text-primary me-2"></i>
+                Report Formats
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="format-card">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-chart-pie fs-1 text-success"></i>
+                        </div>
+                        <h5>Sales Excel Report</h5>
+                        <p><strong>Best for:</strong> Sales presentations, client meetings, executive summaries</p>
+                        <ul class="mb-0">
+                            <li>Executive summary with key metrics</li>
+                            <li>Cost analysis with ROI calculations</li>
+                            <li>Infrastructure overview with visual indicators</li>
+                            <li>Savings opportunities and recommendations</li>
+                            <li>Professional formatting and charts</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="format-card">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-file-excel fs-1 text-success"></i>
+                        </div>
+                        <h5>Standard Excel Report</h5>
+                        <p><strong>Best for:</strong> Technical analysis, detailed planning, migration planning</p>
+                        <ul class="mb-0">
+                            <li>Detailed VM specifications</li>
+                            <li>Complete inventory with all attributes</li>
+                            <li>Storage and network configurations</li>
+                            <li>Performance requirements analysis</li>
+                            <li>Raw data for further processing</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="format-card">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-file-csv fs-1 text-info"></i>
+                        </div>
+                        <h5>CSV Data Export</h5>
+                        <p><strong>Best for:</strong> Data integration, custom analysis, automation</p>
+                        <ul class="mb-0">
+                            <li>Raw data in CSV format</li>
+                            <li>Easy import into other tools</li>
+                            <li>Custom analysis and reporting</li>
+                            <li>Database integration</li>
+                            <li>Automation and scripting</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="format-card">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-file-alt fs-1 text-warning"></i>
+                        </div>
+                        <h5>Text Summary</h5>
+                        <p><strong>Best for:</strong> Quick overview, documentation, reports</p>
+                        <ul class="mb-0">
+                            <li>Human-readable summary</li>
+                            <li>Formatted tables and statistics</li>
+                            <li>Cost breakdown and totals</li>
+                            <li>Infrastructure overview</li>
+                            <li>Easy to copy and share</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RVTools Requirements -->
+        <div class="help-section">
+            <h2 class="mb-4">
+                <i class="fas fa-tools text-primary me-2"></i>
+                RVTools Export Requirements
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <h5>Required Files in ZIP Export</h5>
+                    <p>Your RVTools ZIP export must contain these CSV files:</p>
+                    <ul>
+                        <li><code>RVTools_tabvInfo.csv</code> - VM basic information</li>
+                        <li><code>RVTools_tabvCPU.csv</code> - CPU configuration details</li>
+                        <li><code>RVTools_tabvMemory.csv</code> - Memory allocation information</li>
+                        <li><code>RVTools_tabvDisk.csv</code> - Storage and disk details</li>
+                        <li><code>RVTools_tabvNetwork.csv</code> - Network configuration</li>
+                        <li><code>RVTools_tabvTools.csv</code> - VMware Tools status</li>
+                    </ul>
+                    
+                    <h5 class="mt-4">File Size Limits</h5>
+                    <ul>
+                        <li>Maximum file size: <strong>100MB</strong></li>
+                        <li>Only ZIP files are accepted</li>
+                        <li>Processing time: typically 30-60 seconds</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-light p-3 rounded">
+                        <h6><i class="fas fa-info-circle text-info me-1"></i> Pro Tip</h6>
+                        <p class="mb-0 small">
+                            Use RVTools' "Export All" feature to ensure all required data is included in your ZIP file. This guarantees the most accurate BOM generation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="help-section">
+            <h2 class="mb-4">
+                <i class="fas fa-question-circle text-primary me-2"></i>
+                Frequently Asked Questions
+            </h2>
+            
+            <div class="faq-item">
+                <h6><i class="fas fa-q text-primary me-2"></i> How accurate are the Oracle Cloud pricing calculations?</h6>
+                <p class="mb-0">Our pricing calculations are based on current Oracle Cloud Infrastructure list prices and include compute, memory, storage, and licensing costs. Prices are estimates and may vary based on specific OCI configurations, regions, and enterprise agreements.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h6><i class="fas fa-q text-primary me-2"></i> What happens to my uploaded files?</h6>
+                <p class="mb-0">All uploaded files and generated reports are automatically deleted after 24 hours for security and privacy. We don't store any of your data permanently.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h6><i class="fas fa-q text-primary me-2"></i> Can I process multiple RVTools exports at once?</h6>
+                <p class="mb-0">Yes, you can upload multiple files simultaneously. Each upload gets its own processing session and you can track progress independently.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h6><i class="fas fa-q text-primary me-2"></i> Why are some VMs excluded from cost calculations?</h6>
+                <p class="mb-0">Powered-off VMs are excluded from cost calculations by default since they wouldn't incur compute costs in Oracle Cloud. You can see both powered-on and total VM counts in the reports.</p>
+            </div>
+            
+            <div class="faq-item">
+                <h6><i class="fas fa-q text-primary me-2"></i> What if my RVTools export is missing some files?</h6>
+                <p class="mb-0">The tool will process available data and indicate which information is missing. For best results, ensure all required CSV files are included in your RVTools export.</p>
+            </div>
+        </div>
+
+        <!-- Support -->
+        <div class="help-section">
+            <h2 class="mb-4">
+                <i class="fas fa-life-ring text-primary me-2"></i>
+                Support & Troubleshooting
+            </h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Common Issues</h5>
+                    <ul>
+                        <li><strong>Upload fails:</strong> Check file size (max 100MB) and format (ZIP only)</li>
+                        <li><strong>Processing errors:</strong> Ensure RVTools export contains all required CSV files</li>
+                        <li><strong>Missing data:</strong> Verify your RVTools export captured all VM information</li>
+                        <li><strong>Browser issues:</strong> Use modern browsers (Chrome, Firefox, Safari, Edge)</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5>Best Practices</h5>
+                    <ul>
+                        <li>Use RVTools "Export All" for complete data capture</li>
+                        <li>Select multiple report formats for different audiences</li>
+                        <li>Download reports immediately after generation</li>
+                        <li>Verify VM counts match your environment</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="text-muted mb-0">&copy; 2024 VM Assessment BOM Generator</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="/" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Back to Generator
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

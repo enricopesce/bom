@@ -1,0 +1,127 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '*.md'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build documentation
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Build documentation
+        run: |
+          # Create docs structure if it doesn't exist
+          mkdir -p docs
+          
+          # Copy main documentation files
+          cp README.md docs/index.md
+          cp DEPLOYMENT.md docs/deployment.md
+          cp KUBERNETES-SUMMARY.md docs/kubernetes.md
+          cp .github/CONTRIBUTING.md docs/contributing.md
+          
+          # Create mkdocs.yml if it doesn't exist
+          if [ ! -f mkdocs.yml ]; then
+            cat > mkdocs.yml << EOF
+          site_name: VM Assessment BOM Generator
+          site_description: Professional web-based tool for generating Oracle Cloud Infrastructure Bill of Materials
+          site_url: https://your-org.github.io/vm-assessment-bom
+          repo_url: https://github.com/your-org/vm-assessment-bom
+          repo_name: your-org/vm-assessment-bom
+          
+          theme:
+            name: material
+            palette:
+              - scheme: default
+                primary: blue
+                accent: light blue
+                toggle:
+                  icon: material/brightness-7
+                  name: Switch to dark mode
+              - scheme: slate
+                primary: blue
+                accent: light blue
+                toggle:
+                  icon: material/brightness-4
+                  name: Switch to light mode
+            features:
+              - navigation.tabs
+              - navigation.sections
+              - navigation.expand
+              - navigation.top
+              - search.highlight
+              - content.code.copy
+          
+          nav:
+            - Home: index.md
+            - Deployment: deployment.md
+            - Kubernetes: kubernetes.md
+            - Contributing: contributing.md
+          
+          plugins:
+            - search
+            - mermaid2
+          
+          markdown_extensions:
+            - pymdownx.highlight
+            - pymdownx.superfences:
+                custom_fences:
+                  - name: mermaid
+                    class: mermaid
+                    format: !!python/name:mermaid2.fence_mermaid
+            - pymdownx.tabbed
+            - pymdownx.details
+            - admonition
+            - toc:
+                permalink: true
+          EOF
+          fi
+          
+          # Build docs
+          mkdocs build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./site
+
+  # Deploy to GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

@@ -1,0 +1,85 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vm-assessment-bom-ingress
+  namespace: vm-assessment
+  labels:
+    app.kubernetes.io/name: vm-assessment-bom
+    app.kubernetes.io/component: ingress
+  annotations:
+    # NGINX Ingress Controller annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Upload size limit for large RVTools files
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/client-max-body-size: "100m"
+    
+    # Timeout settings for long processing
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    
+    # Rate limiting (optional)
+    nginx.ingress.kubernetes.io/rate-limit-connections: "10"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    
+    # CORS settings (if needed)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    
+    # Security headers
+    nginx.ingress.kubernetes.io/custom-http-errors: "404,500,502,503,504"
+    
+    # Certificate management with cert-manager (optional)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  # TLS configuration (uncomment and configure as needed)
+  # tls:
+  # - hosts:
+  #   - vm-assessment.your-domain.com
+  #   secretName: vm-assessment-tls
+  rules:
+  - host: vm-assessment.local  # Change to your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vm-assessment-bom-service
+            port:
+              number: 80
+---
+# Alternative: LoadBalancer service for cloud environments
+apiVersion: v1
+kind: Service
+metadata:
+  name: vm-assessment-bom-loadbalancer
+  namespace: vm-assessment
+  labels:
+    app.kubernetes.io/name: vm-assessment-bom
+    app.kubernetes.io/component: loadbalancer
+  annotations:
+    # Cloud-specific annotations
+    # For AWS:
+    # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    # For GCP:
+    # cloud.google.com/load-balancer-type: "External"
+    # For Azure:
+    # service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: vm-assessment-bom

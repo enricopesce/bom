@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vm-assessment-config
+  namespace: vm-assessment
+  labels:
+    app.kubernetes.io/name: vm-assessment-bom
+    app.kubernetes.io/component: configmap
+data:
+  # Application configuration
+  APP_ENV: "production"
+  WORKERS: "4"
+  PORT: "8000"
+  LOG_LEVEL: "INFO"
+  
+  # Security settings
+  UPLOAD_MAX_SIZE: "104857600"  # 100MB in bytes
+  SESSION_TIMEOUT: "86400"      # 24 hours in seconds
+  
+  # Performance settings
+  CLEANUP_INTERVAL: "3600"      # 1 hour in seconds
+  MAX_CONCURRENT_SESSIONS: "50"
+  
+  # Oracle Cloud pricing settings
+  DEFAULT_CURRENCY: "EUR"
+  PRICING_UPDATE_INTERVAL: "86400"  # 24 hours
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vm-assessment-pricing
+  namespace: vm-assessment
+  labels:
+    app.kubernetes.io/name: vm-assessment-bom
+    app.kubernetes.io/component: pricing-config
+data:
+  pricing.json: |
+    {
+      "compute_pricing": {
+        "vm_standard_e4": {
+          "ocpu_price": 0.0425,
+          "memory_gb_price": 0.00694,
+          "description": "VM.Standard.E4.Flex"
+        },
+        "vm_standard_e3": {
+          "ocpu_price": 0.0340,
+          "memory_gb_price": 0.00556,
+          "description": "VM.Standard.E3.Flex"
+        }
+      },
+      "storage_pricing": {
+        "block_volume": {
+          "unit_price": 0.0425,
+          "description": "Block Volume per GB per month"
+        },
+        "block_volume_vpu": {
+          "unit_price": 0.0255,
+          "description": "Block Volume Performance Units per VPU per month"
+        }
+      },
+      "licensing_pricing": {
+        "windows_server": {
+          "unit_price": 0.0292,
+          "description": "Windows Server License per OCPU per hour"
+        },
+        "oracle_database": {
+          "unit_price": 0.8750,
+          "description": "Oracle Database License per OCPU per hour"
+        }
+      },
+      "currency": "EUR",
+      "region": "eu-frankfurt-1",
+      "last_updated": "2024-12-01"
+    }

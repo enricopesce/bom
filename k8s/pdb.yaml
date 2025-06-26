@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: vm-assessment-bom-pdb
+  namespace: vm-assessment
+  labels:
+    app.kubernetes.io/name: vm-assessment-bom
+    app.kubernetes.io/component: pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vm-assessment-bom

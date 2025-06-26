@@ -1,0 +1,34 @@
+# VM Assessment BOM Generator - Complete Dependencies
+# Core web framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# File handling
+python-multipart==0.0.6
+aiofiles==23.2.1
+
+# Template engine
+jinja2==3.1.2
+
+# Data processing
+pandas==2.1.3
+openpyxl==3.1.2
+
+# Production server
+gunicorn==21.2.0
+
+# HTTP requests
+requests==2.31.0
+
+# Configuration
+python-dotenv==1.0.0
+
+# Performance optimization
+orjson==3.9.10
+
+# Security (optional)
+# python-jose[cryptography]==3.3.0
+# passlib[bcrypt]==1.7.4
+
+# Archive handling
+zipfile36==0.1.3
