@@ -1,5 +1,9 @@
 {
   "compute_pricing": {
+    "ocpu": {
+      "unit_price": 0.0425,
+      "description": "Oracle CPU (OCPU) per hour"
+    },
     "vm_standard_e4": {
       "ocpu_price": 0.0425,
       "memory_gb_price": 0.00694,
@@ -9,6 +13,12 @@
       "ocpu_price": 0.0340,
       "memory_gb_price": 0.00556,
       "description": "VM.Standard.E3.Flex"
+    }
+  },
+  "memory_pricing": {
+    "memory_gb": {
+      "unit_price": 0.00694,
+      "description": "Memory per GB per hour"
     }
   },
   "storage_pricing": {
