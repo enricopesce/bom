@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vm-assessment-config
+  namespace: vm-assessment
+  labels:
+    app.kubernetes.io/name: vm-assessment-bom
+    app.kubernetes.io/component: configmap
+data:
+  # Application configuration
+  APP_ENV: "production"
+  WORKERS: "4"
+  PORT: "8000"
+  LOG_LEVEL: "INFO"
+  
+  # Security settings
+  UPLOAD_MAX_SIZE: "104857600"  # 100MB in bytes
+  SESSION_TIMEOUT: "86400"      # 24 hours in seconds
+  
+  # Performance settings
+  CLEANUP_INTERVAL: "3600"      # 1 hour in seconds
+  MAX_CONCURRENT_SESSIONS: "50"
+  
+  # Oracle Cloud pricing settings
+  DEFAULT_CURRENCY: "EUR"
+  PRICING_UPDATE_INTERVAL: "86400"  # 24 hours
