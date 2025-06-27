@@ -9,6 +9,7 @@ import re
 from typing import List, Dict, Any
 from datetime import datetime
 from pathlib import Path
+from io import StringIO
 
 try:
     import openpyxl
@@ -17,6 +18,20 @@ try:
     EXCEL_AVAILABLE = True
 except ImportError:
     EXCEL_AVAILABLE = False
+
+# Professional formatting libraries
+try:
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.columns import Columns
+    from rich.text import Text
+    from rich.align import Align
+    from rich import box
+    from tabulate import tabulate
+    FORMATTING_AVAILABLE = True
+except ImportError:
+    FORMATTING_AVAILABLE = False
 
 from models.vm_models import VMAssessment, BillOfMaterials, OSType
 
@@ -350,42 +365,187 @@ class SimplifiedReportGenerator:
             ws.column_dimensions[column_letter].width = adjusted_width
     
     def _generate_text_report(self, bom: BillOfMaterials, assessment: VMAssessment, output_file: Path):
-        """Generate human-readable text report with improved formatting"""
+        """Generate professional-quality text report using rich and tabulate libraries"""
+        if FORMATTING_AVAILABLE:
+            self._generate_rich_text_report(bom, assessment, output_file)
+        else:
+            self._generate_fallback_text_report(bom, assessment, output_file)
+    
+    def _generate_rich_text_report(self, bom: BillOfMaterials, assessment: VMAssessment, output_file: Path):
+        """Generate high-quality text report using Rich library"""
+        console = Console(file=StringIO(), width=120, force_terminal=False)
+        
+        # Header Panel
+        header_text = Text("VM ASSESSMENT - BILL OF MATERIALS REPORT", style="bold white")
+        metadata_text = Text(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Currency: {bom.currency} | Source: RVTools Export", style="dim")
+        header_panel = Panel(
+            Align.center(Text.assemble(header_text, "\n", metadata_text)),
+            style="blue",
+            box=box.DOUBLE
+        )
+        console.print(header_panel)
+        console.print()
+        
+        # Executive Summary
+        powered_on = len([vm for vm in assessment.vms if vm.is_powered_on])
+        powered_off = len(assessment.vms) - powered_on
+        
+        summary_table = Table(title="Executive Summary", box=box.ROUNDED, show_header=False)
+        summary_table.add_column("Metric", style="cyan")
+        summary_table.add_column("Value", style="bold green")
+        
+        summary_table.add_row("📊 Total Virtual Machines", f"{len(assessment.vms):,}")
+        summary_table.add_row("   ├─ Powered ON", f"{powered_on:,} VMs")
+        summary_table.add_row("   └─ Powered OFF", f"{powered_off:,} VMs")
+        summary_table.add_row("💰 Total Monthly Cost", f"€{bom.total_monthly_cost:,.2f}")
+        summary_table.add_row("💰 Total Annual Cost", f"€{bom.total_monthly_cost * 12:,.2f}")
+        
+        console.print(summary_table)
+        console.print()
+        
+        # OS Distribution
+        os_counts = {}
+        for vm in assessment.vms:
+            os_name = vm.os_type.value if vm.os_type else "Unknown"
+            os_counts[os_name] = os_counts.get(os_name, 0) + 1
+        
+        os_table = Table(title="🖥️ Operating System Distribution", box=box.SIMPLE)
+        os_table.add_column("OS Type", style="cyan")
+        os_table.add_column("Count", justify="right", style="magenta")
+        os_table.add_column("Percentage", justify="right", style="green")
+        
+        for os_name, count in sorted(os_counts.items()):
+            percentage = (count / len(assessment.vms)) * 100 if assessment.vms else 0
+            os_table.add_row(os_name, f"{count:,}", f"{percentage:.1f}%")
+        
+        console.print(os_table)
+        console.print()
+        
+        # Component Cost Breakdown
+        component_costs = {}
+        for line in bom.line_items:
+            comp_type = line.component_type
+            component_costs[comp_type] = component_costs.get(comp_type, 0) + line.total_cost
+        
+        component_table = Table(title="💼 Cost Breakdown by Component", box=box.SIMPLE)
+        component_table.add_column("Component Type", style="cyan")
+        component_table.add_column("Monthly Cost", justify="right", style="green")
+        component_table.add_column("% of Total", justify="right", style="yellow")
+        
+        for comp_type, cost in sorted(component_costs.items(), key=lambda x: x[1], reverse=True):
+            percentage = (cost / bom.total_monthly_cost) * 100 if bom.total_monthly_cost else 0
+            component_table.add_row(comp_type, f"€{cost:,.2f}", f"{percentage:.1f}%")
+        
+        console.print(component_table)
+        console.print()
+        
+        # Detailed VM Breakdown
+        vm_lines = {}
+        vm_totals = {}
+        for line in bom.line_items:
+            if line.vm_name not in vm_lines:
+                vm_lines[line.vm_name] = []
+                vm_totals[line.vm_name] = 0
+            vm_lines[line.vm_name].append(line)
+            vm_totals[line.vm_name] += line.total_cost
+        
+        # Sort VMs by cost (descending)
+        sorted_vms = sorted(vm_totals.items(), key=lambda x: x[1], reverse=True)
+        
+        console.print(Text("💻 DETAILED VM COST BREAKDOWN", style="bold blue"))
+        console.print()
+        
+        for i, (vm_name, vm_total) in enumerate(sorted_vms):
+            lines = vm_lines[vm_name]
+            vm = next((v for v in assessment.vms if v.vm_name == vm_name), None)
+            
+            # VM Header
+            os_type = vm.os_type.value if vm and vm.os_type else "Unknown"
+            power_state = "🟢 POWERED ON" if vm and vm.is_powered_on else "🔴 POWERED OFF"
+            cpu_mem = f"{vm.cpu_cores} vCPU / {vm.memory_gb:.0f} GB RAM" if vm else "N/A"
+            
+            vm_header = f"#{i+1:>2} {vm_name} | {power_state} | {os_type} | {cpu_mem} | Monthly: €{vm_total:,.2f}"
+            console.print(Text(vm_header, style="bold white on blue"))
+            
+            # VM Component Table
+            vm_table = Table(box=box.SIMPLE_HEAD)
+            vm_table.add_column("Component Type", style="cyan")
+            vm_table.add_column("Description", style="white")
+            vm_table.add_column("Quantity", justify="right", style="magenta")
+            vm_table.add_column("Unit", style="yellow")
+            vm_table.add_column("Cost (€)", justify="right", style="green")
+            
+            for line in lines:
+                vm_table.add_row(
+                    line.component_type,
+                    line.description,
+                    f"{line.quantity:.1f}",
+                    line.unit,
+                    f"{line.total_cost:.2f}"
+                )
+            
+            # Add subtotal row
+            vm_table.add_row("", "", "", "[bold]SUBTOTAL", f"[bold green]€{vm_total:,.2f}")
+            
+            console.print(vm_table)
+            console.print()
+        
+        # Grand Total
+        total_panel = Panel(
+            Align.center(Text(f"🎯 TOTAL MONTHLY COST: €{bom.total_monthly_cost:,.2f}\n🎯 TOTAL ANNUAL COST: €{bom.total_monthly_cost * 12:,.2f}", style="bold white")),
+            style="green",
+            box=box.DOUBLE
+        )
+        console.print(total_panel)
+        console.print()
+        
+        # Footer
+        console.print(Text("Generated by RVTools BOM Assessment Tool", style="dim italic"))
+        console.print(Text(f"Oracle Cloud Infrastructure Pricing - {datetime.now().strftime('%Y-%m-%d')}", style="dim italic"))
+        
+        # Write to file
         with open(output_file, 'w', encoding='utf-8') as f:
-            # Header with attractive formatting
-            f.write("╔" + "═" * 88 + "╗\n")
-            f.write("║" + " VM ASSESSMENT - BILL OF MATERIALS REPORT".center(88) + "║\n")
-            f.write("╠" + "═" * 88 + "╣\n")
-            f.write(f"║ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S'):<20} Currency: {bom.currency:<10} Source: RVTools Export ║\n")
-            f.write("╚" + "═" * 88 + "╝\n\n")
+            f.write(console.file.getvalue())
+    
+    def _generate_fallback_text_report(self, bom: BillOfMaterials, assessment: VMAssessment, output_file: Path):
+        """Fallback text report using tabulate library if Rich is not available"""
+        with open(output_file, 'w', encoding='utf-8') as f:
+            # Header
+            f.write("=" * 100 + "\n")
+            f.write("VM ASSESSMENT - BILL OF MATERIALS REPORT".center(100) + "\n")
+            f.write("=" * 100 + "\n")
+            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Currency: {bom.currency} | Source: RVTools Export\n\n")
             
-            # Executive Summary with better layout
-            f.write("┌─ EXECUTIVE SUMMARY " + "─" * 67 + "┐\n")
-            f.write("│                                                                                  │\n")
-            
+            # Executive Summary using tabulate
             powered_on = len([vm for vm in assessment.vms if vm.is_powered_on])
             powered_off = len(assessment.vms) - powered_on
             
-            f.write(f"│  📊 Total Virtual Machines: {len(assessment.vms):>4}                                              │\n")
-            f.write(f"│      ├─ Powered ON:  {powered_on:>4} VMs                                              │\n")
-            f.write(f"│      └─ Powered OFF: {powered_off:>4} VMs                                              │\n")
-            f.write("│                                                                                  │\n")
-            f.write(f"│  💰 Total Monthly Cost: €{bom.total_monthly_cost:>10,.2f}                                     │\n")
-            f.write(f"│  💰 Total Annual Cost:  €{bom.total_monthly_cost * 12:>10,.2f}                                     │\n")
-            f.write("│                                                                                  │\n")
+            summary_data = [
+                ["Total Virtual Machines", f"{len(assessment.vms):,}"],
+                ["├─ Powered ON", f"{powered_on:,} VMs"],
+                ["└─ Powered OFF", f"{powered_off:,} VMs"],
+                ["Total Monthly Cost", f"€{bom.total_monthly_cost:,.2f}"],
+                ["Total Annual Cost", f"€{bom.total_monthly_cost * 12:,.2f}"]
+            ]
             
-            # OS Distribution in summary
+            f.write("EXECUTIVE SUMMARY\n")
+            f.write(tabulate(summary_data, tablefmt="grid", colalign=("left", "right")))
+            f.write("\n\n")
+            
+            # OS Distribution
             os_counts = {}
             for vm in assessment.vms:
                 os_name = vm.os_type.value if vm.os_type else "Unknown"
                 os_counts[os_name] = os_counts.get(os_name, 0) + 1
             
-            f.write("│  🖥️  Operating System Distribution:                                             │\n")
+            os_data = []
             for os_name, count in sorted(os_counts.items()):
                 percentage = (count / len(assessment.vms)) * 100 if assessment.vms else 0
-                f.write(f"│      ├─ {os_name:<12}: {count:>3} VMs ({percentage:>5.1f}%)                                    │\n")
-            f.write("│                                                                                  │\n")
-            f.write("└" + "─" * 82 + "┘\n\n")
+                os_data.append([os_name, f"{count:,}", f"{percentage:.1f}%"])
+            
+            f.write("OPERATING SYSTEM DISTRIBUTION\n")
+            f.write(tabulate(os_data, headers=["OS Type", "Count", "Percentage"], tablefmt="grid"))
+            f.write("\n\n")
             
             # Component Cost Breakdown
             component_costs = {}
@@ -393,17 +553,16 @@ class SimplifiedReportGenerator:
                 comp_type = line.component_type
                 component_costs[comp_type] = component_costs.get(comp_type, 0) + line.total_cost
             
-            f.write("┌─ COST BREAKDOWN BY COMPONENT " + "─" * 52 + "┐\n")
-            for comp_type, cost in sorted(component_costs.items()):
+            component_data = []
+            for comp_type, cost in sorted(component_costs.items(), key=lambda x: x[1], reverse=True):
                 percentage = (cost / bom.total_monthly_cost) * 100 if bom.total_monthly_cost else 0
-                f.write(f"│  {comp_type:<20}: €{cost:>10,.2f} ({percentage:>5.1f}% of total)                │\n")
-            f.write("└" + "─" * 82 + "┘\n\n")
+                component_data.append([comp_type, f"€{cost:,.2f}", f"{percentage:.1f}%"])
             
-            # Detailed VM Cost Breakdown with improved table formatting
-            f.write("┌─ DETAILED VM COST BREAKDOWN " + "─" * 53 + "┐\n")
-            f.write("│                                                                                  │\n")
+            f.write("COST BREAKDOWN BY COMPONENT\n")
+            f.write(tabulate(component_data, headers=["Component Type", "Monthly Cost", "% of Total"], tablefmt="grid"))
+            f.write("\n\n")
             
-            # Group lines by VM and sort by cost (highest first)
+            # Detailed VM Breakdown
             vm_lines = {}
             vm_totals = {}
             for line in bom.line_items:
@@ -416,45 +575,47 @@ class SimplifiedReportGenerator:
             # Sort VMs by cost (descending)
             sorted_vms = sorted(vm_totals.items(), key=lambda x: x[1], reverse=True)
             
+            f.write("DETAILED VM COST BREAKDOWN\n")
+            f.write("=" * 100 + "\n")
+            
             for i, (vm_name, vm_total) in enumerate(sorted_vms):
                 lines = vm_lines[vm_name]
                 vm = next((v for v in assessment.vms if v.vm_name == vm_name), None)
                 
                 # VM Header
                 os_type = vm.os_type.value if vm and vm.os_type else "Unknown"
-                power_state = "🟢 POWERED ON " if vm and vm.is_powered_on else "🔴 POWERED OFF"
+                power_state = "POWERED ON" if vm and vm.is_powered_on else "POWERED OFF"
                 cpu_mem = f"{vm.cpu_cores} vCPU / {vm.memory_gb:.0f} GB RAM" if vm else "N/A"
                 
-                f.write(f"│ #{i+1:>2} {vm_name:<40} Monthly: €{vm_total:>8,.2f}                  │\n")
-                f.write(f"│     {power_state:<15} │ {os_type:<10} │ {cpu_mem:<25}               │\n")
-                f.write("├" + "─" * 82 + "┤\n")
+                f.write(f"\n#{i+1:>2} {vm_name} | {power_state} | {os_type} | {cpu_mem} | Monthly: €{vm_total:,.2f}\n")
+                f.write("-" * 100 + "\n")
                 
-                # Table header
-                f.write("│ Component             │ Description           │   Qty │ Unit   │   Cost € │\n")
-                f.write("├" + "─" * 23 + "┼" + "─" * 23 + "┼" + "─" * 7 + "┼" + "─" * 8 + "┼" + "─" * 10 + "┤\n")
-                
+                # VM Component Table
+                vm_data = []
                 for line in lines:
-                    # Truncate and pad for proper alignment
-                    component = line.component_type[:22].ljust(22)
-                    desc = line.description[:22].ljust(22)
-                    qty = f"{line.quantity:.1f}".rjust(6)
-                    unit = line.unit[:7].ljust(7)
-                    cost = f"{line.total_cost:>9.2f}"
-                    
-                    f.write(f"│ {component} │ {desc} │ {qty} │ {unit} │ {cost} │\n")
+                    vm_data.append([
+                        line.component_type,
+                        line.description,
+                        f"{line.quantity:.1f}",
+                        line.unit,
+                        f"€{line.total_cost:.2f}"
+                    ])
                 
-                f.write("├" + "─" * 23 + "┴" + "─" * 23 + "┴" + "─" * 7 + "┴" + "─" * 8 + "┴" + "─" * 10 + "┤\n")
-                f.write(f"│ VM SUBTOTAL:                                                     €{vm_total:>9,.2f} │\n")
-                f.write("│                                                                                  │\n")
+                # Add subtotal
+                vm_data.append(["", "", "", "SUBTOTAL", f"€{vm_total:,.2f}"])
+                
+                f.write(tabulate(vm_data, headers=["Component", "Description", "Qty", "Unit", "Cost"], tablefmt="grid"))
+                f.write("\n")
             
-            f.write("├" + "═" * 82 + "┤\n")
-            f.write(f"│ 🎯 TOTAL MONTHLY COST:                                           €{bom.total_monthly_cost:>13,.2f} │\n")
-            f.write(f"│ 🎯 TOTAL ANNUAL COST:                                            €{bom.total_monthly_cost * 12:>13,.2f} │\n")
-            f.write("└" + "─" * 82 + "┘\n\n")
+            # Grand Total
+            f.write("\n" + "=" * 100 + "\n")
+            f.write(f"TOTAL MONTHLY COST: €{bom.total_monthly_cost:,.2f}\n")
+            f.write(f"TOTAL ANNUAL COST: €{bom.total_monthly_cost * 12:,.2f}\n")
+            f.write("=" * 100 + "\n\n")
             
             # Footer
             f.write("Generated by RVTools BOM Assessment Tool\n")
-            f.write("Oracle Cloud Infrastructure Pricing - " + datetime.now().strftime('%Y-%m-%d') + "\n")
+            f.write(f"Oracle Cloud Infrastructure Pricing - {datetime.now().strftime('%Y-%m-%d')}\n")
     
     def _generate_csv_report(self, bom: BillOfMaterials, assessment: VMAssessment, output_file: Path):
         """Generate CSV report for analysis"""
