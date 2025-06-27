@@ -399,7 +399,7 @@ class SimplifiedReportGenerator:
                 f.write(f"│  {comp_type:<20}: €{cost:>10,.2f} ({percentage:>5.1f}% of total)                │\n")
             f.write("└" + "─" * 82 + "┘\n\n")
             
-            # Detailed VM Cost Breakdown
+            # Detailed VM Cost Breakdown with improved table formatting
             f.write("┌─ DETAILED VM COST BREAKDOWN " + "─" * 53 + "┐\n")
             f.write("│                                                                                  │\n")
             
@@ -422,26 +422,34 @@ class SimplifiedReportGenerator:
                 
                 # VM Header
                 os_type = vm.os_type.value if vm and vm.os_type else "Unknown"
-                power_state = "🟢 ON " if vm and vm.is_powered_on else "🔴 OFF"
-                cpu_mem = f"{vm.cpu_cores}vCPU/{vm.memory_gb:.0f}GB" if vm else "N/A"
+                power_state = "🟢 POWERED ON " if vm and vm.is_powered_on else "🔴 POWERED OFF"
+                cpu_mem = f"{vm.cpu_cores} vCPU / {vm.memory_gb:.0f} GB RAM" if vm else "N/A"
                 
-                f.write(f"│ {i+1:>2}. {vm_name:<25} │ {power_state} │ {os_type:<8} │ {cpu_mem:<12} │\n")
-                f.write("│" + "─" * 82 + "│\n")
+                f.write(f"│ #{i+1:>2} {vm_name:<40} Monthly: €{vm_total:>8,.2f}                  │\n")
+                f.write(f"│     {power_state:<15} │ {os_type:<10} │ {cpu_mem:<25}               │\n")
+                f.write("├" + "─" * 82 + "┤\n")
                 
-                # Component details with better alignment
-                f.write("│    Component Type      │ Description              │  Qty │ Unit  │ Monthly €│\n")
-                f.write("│" + "─" * 82 + "│\n")
+                # Table header
+                f.write("│ Component             │ Description           │   Qty │ Unit   │   Cost € │\n")
+                f.write("├" + "─" * 23 + "┼" + "─" * 23 + "┼" + "─" * 7 + "┼" + "─" * 8 + "┼" + "─" * 10 + "┤\n")
                 
                 for line in lines:
-                    f.write(f"│    {line.component_type:<18} │ {line.description[:24]:<24} │ {line.quantity:>4.1f} │ {line.unit:<5} │ {line.total_cost:>8.2f} │\n")
+                    # Truncate and pad for proper alignment
+                    component = line.component_type[:22].ljust(22)
+                    desc = line.description[:22].ljust(22)
+                    qty = f"{line.quantity:.1f}".rjust(6)
+                    unit = line.unit[:7].ljust(7)
+                    cost = f"{line.total_cost:>9.2f}"
+                    
+                    f.write(f"│ {component} │ {desc} │ {qty} │ {unit} │ {cost} │\n")
                 
-                f.write("│" + "─" * 82 + "│\n")
-                f.write(f"│    VM MONTHLY SUBTOTAL: €{vm_total:>10,.2f}                                     │\n")
+                f.write("├" + "─" * 23 + "┴" + "─" * 23 + "┴" + "─" * 7 + "┴" + "─" * 8 + "┴" + "─" * 10 + "┤\n")
+                f.write(f"│ VM SUBTOTAL:                                                     €{vm_total:>9,.2f} │\n")
                 f.write("│                                                                                  │\n")
             
-            f.write("│" + "═" * 82 + "│\n")
-            f.write(f"│ 🎯 TOTAL MONTHLY COST: €{bom.total_monthly_cost:>15,.2f}                                   │\n")
-            f.write(f"│ 🎯 TOTAL ANNUAL COST:  €{bom.total_monthly_cost * 12:>15,.2f}                                   │\n")
+            f.write("├" + "═" * 82 + "┤\n")
+            f.write(f"│ 🎯 TOTAL MONTHLY COST:                                           €{bom.total_monthly_cost:>13,.2f} │\n")
+            f.write(f"│ 🎯 TOTAL ANNUAL COST:                                            €{bom.total_monthly_cost * 12:>13,.2f} │\n")
             f.write("└" + "─" * 82 + "┘\n\n")
             
             # Footer
