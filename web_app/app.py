@@ -179,6 +179,10 @@ async def get_status(session_id: str):
         "error": session.error
     }
     
+    # Include file_map for download links
+    if hasattr(session, 'file_map') and session.file_map:
+        response_data["file_map"] = session.file_map
+    
     # Include summary if available and merge into response
     if hasattr(session, 'summary') and session.summary:
         response_data.update(session.summary)
@@ -260,11 +264,18 @@ async def process_vm_assessment(session_id: str, file_path: str):
         session.message = "Generating reports..."
         session.progress = 80
         
-        # Generate all three optimized reports
+        # Generate all three optimized reports with original filename
+        original_filename = Path(file_path).name
         report_generator = SimplifiedReportGenerator(output_dir)
-        generated_files = report_generator.generate_all_reports(bom, assessment)
+        generated_files = report_generator.generate_all_reports(bom, assessment, original_filename)
         
-        session.files = list(generated_files.values())
+        # Store files with their types for frontend
+        session.files = []
+        session.file_map = {}
+        for file_type, file_path in generated_files.items():
+            filename = Path(file_path).name
+            session.files.append(filename)
+            session.file_map[file_type] = filename
         session.progress = 100
         session.status = "completed"
         session.message = f"Successfully generated {len(generated_files)} report files"

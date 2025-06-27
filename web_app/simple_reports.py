@@ -5,6 +5,7 @@ Creates exactly 3 optimized output files: Excel, Text, and CSV
 
 import csv
 import json
+import re
 from typing import List, Dict, Any
 from datetime import datetime
 from pathlib import Path
@@ -27,36 +28,70 @@ class SimplifiedReportGenerator:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
     
-    def generate_all_reports(self, bom: BillOfMaterials, assessment: VMAssessment) -> Dict[str, str]:
+    def generate_all_reports(self, bom: BillOfMaterials, assessment: VMAssessment, source_filename: str = None) -> Dict[str, str]:
         """
         Generate all three report formats
         
         Args:
             bom: Bill of Materials with cost calculations
             assessment: VM Assessment with VM details
+            source_filename: Original filename for better naming
         
         Returns:
             Dict with file paths for each format
         """
         files = {}
         
+        # Create base filename from source
+        base_name = self._create_base_filename(source_filename)
+        
         # Generate Excel report
         if EXCEL_AVAILABLE:
-            excel_file = self.output_dir / "assessment_report.xlsx"
+            excel_file = self.output_dir / f"{base_name}_BOM_Report.xlsx"
             self._generate_excel_report(bom, assessment, excel_file)
             files['excel'] = str(excel_file)
         
         # Generate Text report
-        text_file = self.output_dir / "assessment_report.txt"
+        text_file = self.output_dir / f"{base_name}_BOM_Report.txt"
         self._generate_text_report(bom, assessment, text_file)
         files['text'] = str(text_file)
         
         # Generate CSV report
-        csv_file = self.output_dir / "assessment_report.csv"
+        csv_file = self.output_dir / f"{base_name}_BOM_Data.csv"
         self._generate_csv_report(bom, assessment, csv_file)
         files['csv'] = str(csv_file)
         
         return files
+    
+    def _create_base_filename(self, source_filename: str = None) -> str:
+        """Create a clean base filename from the source filename"""
+        if not source_filename:
+            return f"VM_Assessment_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Extract filename without extension
+        base = Path(source_filename).stem
+        
+        # Clean up the filename - remove common RVTools prefixes and normalize
+        base = re.sub(r'^RVTools[_\s]*export[_\s]*', '', base, flags=re.IGNORECASE)
+        base = re.sub(r'^RVTools[_\s]*', '', base, flags=re.IGNORECASE)
+        base = re.sub(r'[_\s]*all[_\s]*', '_', base, flags=re.IGNORECASE)
+        
+        # Replace spaces and special characters with underscores
+        base = re.sub(r'[^\w\-]', '_', base)
+        
+        # Remove multiple underscores
+        base = re.sub(r'_+', '_', base)
+        
+        # Remove leading/trailing underscores
+        base = base.strip('_')
+        
+        # Ensure it's not empty and not too long
+        if not base or len(base) < 3:
+            base = f"VM_Assessment_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        elif len(base) > 50:
+            base = base[:50].rstrip('_')
+        
+        return base
     
     def _generate_excel_report(self, bom: BillOfMaterials, assessment: VMAssessment, output_file: Path):
         """Generate comprehensive Excel report with multiple sheets"""
@@ -315,67 +350,103 @@ class SimplifiedReportGenerator:
             ws.column_dimensions[column_letter].width = adjusted_width
     
     def _generate_text_report(self, bom: BillOfMaterials, assessment: VMAssessment, output_file: Path):
-        """Generate human-readable text report"""
+        """Generate human-readable text report with improved formatting"""
         with open(output_file, 'w', encoding='utf-8') as f:
-            # Header
-            f.write("=" * 80 + "\n")
-            f.write("VM ASSESSMENT - BILL OF MATERIALS REPORT\n")
-            f.write("=" * 80 + "\n")
-            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Currency: {bom.currency}\n")
-            f.write("\n")
+            # Header with attractive formatting
+            f.write("╔" + "═" * 88 + "╗\n")
+            f.write("║" + " VM ASSESSMENT - BILL OF MATERIALS REPORT".center(88) + "║\n")
+            f.write("╠" + "═" * 88 + "╣\n")
+            f.write(f"║ Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S'):<20} Currency: {bom.currency:<10} Source: RVTools Export ║\n")
+            f.write("╚" + "═" * 88 + "╝\n\n")
             
-            # Summary
-            f.write("EXECUTIVE SUMMARY\n")
-            f.write("-" * 40 + "\n")
-            f.write(f"Total VMs: {len(assessment.vms)}\n")
-            f.write(f"Powered On VMs: {len([vm for vm in assessment.vms if vm.is_powered_on])}\n")
-            f.write(f"Total Monthly Cost: €{bom.total_monthly_cost:.2f}\n")
-            f.write("\n")
+            # Executive Summary with better layout
+            f.write("┌─ EXECUTIVE SUMMARY " + "─" * 67 + "┐\n")
+            f.write("│                                                                                  │\n")
             
-            # OS Distribution
+            powered_on = len([vm for vm in assessment.vms if vm.is_powered_on])
+            powered_off = len(assessment.vms) - powered_on
+            
+            f.write(f"│  📊 Total Virtual Machines: {len(assessment.vms):>4}                                              │\n")
+            f.write(f"│      ├─ Powered ON:  {powered_on:>4} VMs                                              │\n")
+            f.write(f"│      └─ Powered OFF: {powered_off:>4} VMs                                              │\n")
+            f.write("│                                                                                  │\n")
+            f.write(f"│  💰 Total Monthly Cost: €{bom.total_monthly_cost:>10,.2f}                                     │\n")
+            f.write(f"│  💰 Total Annual Cost:  €{bom.total_monthly_cost * 12:>10,.2f}                                     │\n")
+            f.write("│                                                                                  │\n")
+            
+            # OS Distribution in summary
             os_counts = {}
             for vm in assessment.vms:
                 os_name = vm.os_type.value if vm.os_type else "Unknown"
                 os_counts[os_name] = os_counts.get(os_name, 0) + 1
             
-            f.write("Operating System Distribution:\n")
-            for os_name, count in os_counts.items():
-                f.write(f"  {os_name}: {count} VMs\n")
-            f.write("\n")
+            f.write("│  🖥️  Operating System Distribution:                                             │\n")
+            for os_name, count in sorted(os_counts.items()):
+                percentage = (count / len(assessment.vms)) * 100 if assessment.vms else 0
+                f.write(f"│      ├─ {os_name:<12}: {count:>3} VMs ({percentage:>5.1f}%)                                    │\n")
+            f.write("│                                                                                  │\n")
+            f.write("└" + "─" * 82 + "┘\n\n")
             
-            # Cost breakdown by VM
-            f.write("DETAILED COST BREAKDOWN BY VM\n")
-            f.write("-" * 80 + "\n")
+            # Component Cost Breakdown
+            component_costs = {}
+            for line in bom.line_items:
+                comp_type = line.component_type
+                component_costs[comp_type] = component_costs.get(comp_type, 0) + line.total_cost
             
-            # Group lines by VM
+            f.write("┌─ COST BREAKDOWN BY COMPONENT " + "─" * 52 + "┐\n")
+            for comp_type, cost in sorted(component_costs.items()):
+                percentage = (cost / bom.total_monthly_cost) * 100 if bom.total_monthly_cost else 0
+                f.write(f"│  {comp_type:<20}: €{cost:>10,.2f} ({percentage:>5.1f}% of total)                │\n")
+            f.write("└" + "─" * 82 + "┘\n\n")
+            
+            # Detailed VM Cost Breakdown
+            f.write("┌─ DETAILED VM COST BREAKDOWN " + "─" * 53 + "┐\n")
+            f.write("│                                                                                  │\n")
+            
+            # Group lines by VM and sort by cost (highest first)
             vm_lines = {}
+            vm_totals = {}
             for line in bom.line_items:
                 if line.vm_name not in vm_lines:
                     vm_lines[line.vm_name] = []
+                    vm_totals[line.vm_name] = 0
                 vm_lines[line.vm_name].append(line)
+                vm_totals[line.vm_name] += line.total_cost
             
-            for vm_name, lines in vm_lines.items():
-                # Find VM details
+            # Sort VMs by cost (descending)
+            sorted_vms = sorted(vm_totals.items(), key=lambda x: x[1], reverse=True)
+            
+            for i, (vm_name, vm_total) in enumerate(sorted_vms):
+                lines = vm_lines[vm_name]
                 vm = next((v for v in assessment.vms if v.vm_name == vm_name), None)
+                
+                # VM Header
                 os_type = vm.os_type.value if vm and vm.os_type else "Unknown"
+                power_state = "🟢 ON " if vm and vm.is_powered_on else "🔴 OFF"
+                cpu_mem = f"{vm.cpu_cores}vCPU/{vm.memory_gb:.0f}GB" if vm else "N/A"
                 
-                f.write(f"\n{vm_name:<30} {os_type:<10}\n")
-                f.write("-" * 80 + "\n")
+                f.write(f"│ {i+1:>2}. {vm_name:<25} │ {power_state} │ {os_type:<8} │ {cpu_mem:<12} │\n")
+                f.write("│" + "─" * 82 + "│\n")
                 
-                vm_total = 0
+                # Component details with better alignment
+                f.write("│    Component Type      │ Description              │  Qty │ Unit  │ Monthly €│\n")
+                f.write("│" + "─" * 82 + "│\n")
+                
                 for line in lines:
-                    f.write(f"  {line.component_type:<20} {line.description:<35} ")
-                    f.write(f"{line.quantity:>6.2f} {line.unit:<8} ")
-                    f.write(f"€{line.unit_price:>8.4f} €{line.total_cost:>10.2f}\n")
-                    vm_total += line.total_cost
+                    f.write(f"│    {line.component_type:<18} │ {line.description[:24]:<24} │ {line.quantity:>4.1f} │ {line.unit:<5} │ {line.total_cost:>8.2f} │\n")
                 
-                f.write(f"VM SUBTOTAL:{'':<55} €{vm_total:>10.2f}\n")
-                f.write("-" * 80 + "\n")
+                f.write("│" + "─" * 82 + "│\n")
+                f.write(f"│    VM MONTHLY SUBTOTAL: €{vm_total:>10,.2f}                                     │\n")
+                f.write("│                                                                                  │\n")
             
-            # Grand total
-            f.write(f"\nGRAND TOTAL:{'':<60} €{bom.total_monthly_cost:>10.2f}\n")
-            f.write("=" * 80 + "\n")
+            f.write("│" + "═" * 82 + "│\n")
+            f.write(f"│ 🎯 TOTAL MONTHLY COST: €{bom.total_monthly_cost:>15,.2f}                                   │\n")
+            f.write(f"│ 🎯 TOTAL ANNUAL COST:  €{bom.total_monthly_cost * 12:>15,.2f}                                   │\n")
+            f.write("└" + "─" * 82 + "┘\n\n")
+            
+            # Footer
+            f.write("Generated by RVTools BOM Assessment Tool\n")
+            f.write("Oracle Cloud Infrastructure Pricing - " + datetime.now().strftime('%Y-%m-%d') + "\n")
     
     def _generate_csv_report(self, bom: BillOfMaterials, assessment: VMAssessment, output_file: Path):
         """Generate CSV report for analysis"""

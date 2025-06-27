@@ -430,10 +430,18 @@
                 </div>
             `;
             
-            // Update download links
-            document.getElementById('downloadExcel').href = `/download/${currentSessionId}/assessment_report.xlsx`;
-            document.getElementById('downloadText').href = `/download/${currentSessionId}/assessment_report.txt`;
-            document.getElementById('downloadCsv').href = `/download/${currentSessionId}/assessment_report.csv`;
+            // Update download links using actual generated filenames
+            if (data.file_map) {
+                if (data.file_map.excel) {
+                    document.getElementById('downloadExcel').href = `/download/${currentSessionId}/${data.file_map.excel}`;
+                }
+                if (data.file_map.text) {
+                    document.getElementById('downloadText').href = `/download/${currentSessionId}/${data.file_map.text}`;
+                }
+                if (data.file_map.csv) {
+                    document.getElementById('downloadCsv').href = `/download/${currentSessionId}/${data.file_map.csv}`;
+                }
+            }
         }
         
         function showError(message) {
