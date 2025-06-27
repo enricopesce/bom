@@ -409,12 +409,15 @@ class SimplifiedReportGenerator:
             os_name = vm.os_type.value if vm.os_type else "Unknown"
             os_counts[os_name] = os_counts.get(os_name, 0) + 1
         
-        os_table = Table(title="🖥️ Operating System Distribution", box=box.SIMPLE)
-        os_table.add_column("OS Type", style="cyan")
-        os_table.add_column("Count", justify="right", style="magenta")
-        os_table.add_column("Percentage", justify="right", style="green")
+        os_table = Table(title="🖥️ Operating System Distribution", box=box.SIMPLE, show_footer=True)
+        os_table.add_column("OS Type", style="cyan", footer="[bold]TOTAL")
+        os_table.add_column("Count", justify="right", style="magenta", footer=f"[bold]{len(assessment.vms):,}")
+        os_table.add_column("Percentage", justify="right", style="green", footer="[bold]100.0%")
         
-        for os_name, count in sorted(os_counts.items()):
+        # Sort by count (descending) for better organization
+        sorted_os = sorted(os_counts.items(), key=lambda x: x[1], reverse=True)
+        
+        for os_name, count in sorted_os:
             percentage = (count / len(assessment.vms)) * 100 if assessment.vms else 0
             os_table.add_row(os_name, f"{count:,}", f"{percentage:.1f}%")
         
@@ -539,9 +542,16 @@ class SimplifiedReportGenerator:
                 os_counts[os_name] = os_counts.get(os_name, 0) + 1
             
             os_data = []
-            for os_name, count in sorted(os_counts.items()):
+            # Sort by count (descending) for better organization
+            sorted_os = sorted(os_counts.items(), key=lambda x: x[1], reverse=True)
+            
+            for os_name, count in sorted_os:
                 percentage = (count / len(assessment.vms)) * 100 if assessment.vms else 0
                 os_data.append([os_name, f"{count:,}", f"{percentage:.1f}%"])
+            
+            # Add totals row
+            os_data.append(["", "", ""])
+            os_data.append(["TOTAL", f"{len(assessment.vms):,}", "100.0%"])
             
             f.write("OPERATING SYSTEM DISTRIBUTION\n")
             f.write(tabulate(os_data, headers=["OS Type", "Count", "Percentage"], tablefmt="grid"))
