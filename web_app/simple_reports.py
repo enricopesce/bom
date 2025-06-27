@@ -161,11 +161,14 @@ class SimplifiedReportGenerator:
         ws["A7"] = "Currency:"
         ws["B7"] = bom.currency
         
-        # OS Distribution
+        # OS Distribution - merge Unix into Linux
         ws["A9"] = "Operating System Distribution:"
         os_counts = {}
         for vm in assessment.vms:
             os_name = vm.os_type.value if vm.os_type else "Unknown"
+            # Merge Unix systems into Linux category
+            if os_name == "Unix":
+                os_name = "Linux"
             os_counts[os_name] = os_counts.get(os_name, 0) + 1
         
         row = 10
@@ -403,10 +406,13 @@ class SimplifiedReportGenerator:
         console.print(summary_table)
         console.print()
         
-        # OS Distribution
+        # OS Distribution - merge Unix into Linux
         os_counts = {}
         for vm in assessment.vms:
             os_name = vm.os_type.value if vm.os_type else "Unknown"
+            # Merge Unix systems into Linux category
+            if os_name == "Unix":
+                os_name = "Linux"
             os_counts[os_name] = os_counts.get(os_name, 0) + 1
         
         os_table = Table(title="🖥️ Operating System Distribution", box=box.SIMPLE, show_footer=True)
@@ -535,10 +541,13 @@ class SimplifiedReportGenerator:
             f.write(tabulate(summary_data, tablefmt="grid", colalign=("left", "right")))
             f.write("\n\n")
             
-            # OS Distribution
+            # OS Distribution - merge Unix into Linux
             os_counts = {}
             for vm in assessment.vms:
                 os_name = vm.os_type.value if vm.os_type else "Unknown"
+                # Merge Unix systems into Linux category
+                if os_name == "Unix":
+                    os_name = "Linux"
                 os_counts[os_name] = os_counts.get(os_name, 0) + 1
             
             os_data = []

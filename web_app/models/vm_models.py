@@ -300,10 +300,8 @@ def detect_os_type(os_string: str) -> OSType:
     os_lower = os_string.lower()
     if 'windows' in os_lower or 'microsoft' in os_lower:
         return OSType.WINDOWS
-    elif any(linux in os_lower for linux in ['ubuntu', 'centos', 'oracle linux', 'debian', 'suse', 'linux', 'rhel']):
+    elif any(unix_like in os_lower for unix_like in ['ubuntu', 'centos', 'oracle linux', 'debian', 'suse', 'linux', 'rhel', 'unix', 'aix', 'solaris', 'bsd']):
         return OSType.LINUX
-    elif any(unix in os_lower for unix in ['unix', 'aix', 'solaris', 'bsd']):
-        return OSType.UNIX
     else:
         return OSType.OTHER
 
