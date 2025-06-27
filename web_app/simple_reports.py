@@ -145,33 +145,40 @@ class SimplifiedReportGenerator:
         ws["A1"].fill = header_fill
         ws["A1"].alignment = Alignment(horizontal="center")
         
-        # Summary metrics
+        # Summary metrics - only powered-on VMs
+        powered_on_vms = [vm for vm in assessment.vms if vm.is_powered_on]
+        total_vms = len(assessment.vms)
+        powered_off = total_vms - len(powered_on_vms)
+        
         ws["A3"] = "Report Generated:"
         ws["B3"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        ws["A4"] = "Total VMs:"
-        ws["B4"] = len(assessment.vms)
+        ws["A4"] = "Active VMs (Powered ON):"
+        ws["B4"] = len(powered_on_vms)
         
-        ws["A5"] = "Powered On VMs:"
-        ws["B5"] = len([vm for vm in assessment.vms if vm.is_powered_on])
+        ws["A5"] = "Powered OFF (excluded):"
+        ws["B5"] = powered_off
         
-        ws["A6"] = "Total Monthly Cost:"
-        ws["B6"] = f"€{bom.total_monthly_cost:.2f}"
+        ws["A6"] = "Total VMs in Environment:"
+        ws["B6"] = total_vms
         
-        ws["A7"] = "Currency:"
-        ws["B7"] = bom.currency
+        ws["A7"] = "Total Monthly Cost:"
+        ws["B7"] = f"€{bom.total_monthly_cost:.2f}"
         
-        # OS Distribution - merge Unix into Linux
-        ws["A9"] = "Operating System Distribution:"
+        ws["A8"] = "Currency:"
+        ws["B8"] = bom.currency
+        
+        # OS Distribution - only powered-on VMs, merge Unix into Linux
+        ws["A10"] = "Operating System Distribution (Active VMs):"
         os_counts = {}
-        for vm in assessment.vms:
+        for vm in powered_on_vms:
             os_name = vm.os_type.value if vm.os_type else "Unknown"
             # Merge Unix systems into Linux category
             if os_name == "Unix":
                 os_name = "Linux"
             os_counts[os_name] = os_counts.get(os_name, 0) + 1
         
-        row = 10
+        row = 11
         for os_name, count in os_counts.items():
             ws[f"A{row}"] = f"  {os_name}:"
             ws[f"B{row}"] = count
@@ -204,12 +211,12 @@ class SimplifiedReportGenerator:
             ws.column_dimensions[column_letter].width = adjusted_width
     
     def _create_vm_details_sheet(self, wb, bom, assessment):
-        """Create detailed VM information sheet"""
-        ws = wb.create_sheet("VM Details")
+        """Create detailed VM information sheet - only powered-on VMs"""
+        ws = wb.create_sheet("VM Details (Active)")
         
         # Headers
         headers = [
-            "VM Name", "OS Type", "Power State", "CPU Cores", "Memory (GB)", 
+            "VM Name", "OS Type", "Status", "CPU Cores", "Memory (GB)", 
             "Storage (GB)", "Network Adapters", "Monthly Cost (€)"
         ]
         
@@ -218,11 +225,12 @@ class SimplifiedReportGenerator:
             cell.font = Font(bold=True)
             cell.fill = PatternFill(start_color="E6E6FA", end_color="E6E6FA", fill_type="solid")
         
-        # VM data
-        for row, vm in enumerate(assessment.vms, 2):
+        # VM data - only powered-on VMs
+        powered_on_vms = [vm for vm in assessment.vms if vm.is_powered_on]
+        for row, vm in enumerate(powered_on_vms, 2):
             ws.cell(row=row, column=1, value=vm.vm_name)
             ws.cell(row=row, column=2, value=vm.os_type.value if vm.os_type else "Unknown")
-            ws.cell(row=row, column=3, value="Powered On" if vm.is_powered_on else "Powered Off")
+            ws.cell(row=row, column=3, value="Active")
             ws.cell(row=row, column=4, value=vm.cpu_cores)
             ws.cell(row=row, column=5, value=vm.memory_gb)
             ws.cell(row=row, column=6, value=vm.total_storage_gb)
@@ -389,42 +397,43 @@ class SimplifiedReportGenerator:
         console.print(header_panel)
         console.print()
         
-        # Executive Summary
-        powered_on = len([vm for vm in assessment.vms if vm.is_powered_on])
-        powered_off = len(assessment.vms) - powered_on
+        # Executive Summary - only powered-on VMs
+        powered_on_vms = [vm for vm in assessment.vms if vm.is_powered_on]
+        total_vms = len(assessment.vms)
+        powered_off = total_vms - len(powered_on_vms)
         
         summary_table = Table(title="Executive Summary", box=box.ROUNDED, show_header=False)
         summary_table.add_column("Metric", style="cyan")
         summary_table.add_column("Value", style="bold green")
         
-        summary_table.add_row("📊 Total Virtual Machines", f"{len(assessment.vms):,}")
-        summary_table.add_row("   ├─ Powered ON", f"{powered_on:,} VMs")
-        summary_table.add_row("   └─ Powered OFF", f"{powered_off:,} VMs")
+        summary_table.add_row("📊 Active Virtual Machines", f"{len(powered_on_vms):,}")
+        summary_table.add_row("📴 Powered OFF (excluded)", f"{powered_off:,} VMs")
+        summary_table.add_row("🎯 Total VMs in Environment", f"{total_vms:,}")
         summary_table.add_row("💰 Total Monthly Cost", f"€{bom.total_monthly_cost:,.2f}")
         summary_table.add_row("💰 Total Annual Cost", f"€{bom.total_monthly_cost * 12:,.2f}")
         
         console.print(summary_table)
         console.print()
         
-        # OS Distribution - merge Unix into Linux
+        # OS Distribution - only powered-on VMs, merge Unix into Linux
         os_counts = {}
-        for vm in assessment.vms:
+        for vm in powered_on_vms:
             os_name = vm.os_type.value if vm.os_type else "Unknown"
             # Merge Unix systems into Linux category
             if os_name == "Unix":
                 os_name = "Linux"
             os_counts[os_name] = os_counts.get(os_name, 0) + 1
         
-        os_table = Table(title="🖥️ Operating System Distribution", box=box.SIMPLE, show_footer=True)
+        os_table = Table(title="🖥️ Operating System Distribution (Active VMs)", box=box.SIMPLE, show_footer=True)
         os_table.add_column("OS Type", style="cyan", footer="[bold]TOTAL")
-        os_table.add_column("Count", justify="right", style="magenta", footer=f"[bold]{len(assessment.vms):,}")
+        os_table.add_column("Count", justify="right", style="magenta", footer=f"[bold]{len(powered_on_vms):,}")
         os_table.add_column("Percentage", justify="right", style="green", footer="[bold]100.0%")
         
         # Sort by count (descending) for better organization
         sorted_os = sorted(os_counts.items(), key=lambda x: x[1], reverse=True)
         
         for os_name, count in sorted_os:
-            percentage = (count / len(assessment.vms)) * 100 if assessment.vms else 0
+            percentage = (count / len(powered_on_vms)) * 100 if powered_on_vms else 0
             os_table.add_row(os_name, f"{count:,}", f"{percentage:.1f}%")
         
         console.print(os_table)
@@ -461,19 +470,22 @@ class SimplifiedReportGenerator:
         # Sort VMs by cost (descending)
         sorted_vms = sorted(vm_totals.items(), key=lambda x: x[1], reverse=True)
         
-        console.print(Text("💻 DETAILED VM COST BREAKDOWN", style="bold blue"))
+        console.print(Text("💻 DETAILED VM COST BREAKDOWN (Active VMs Only)", style="bold blue"))
         console.print()
         
-        for i, (vm_name, vm_total) in enumerate(sorted_vms):
+        # Filter to only show powered-on VMs
+        active_vms = [(vm_name, vm_total) for vm_name, vm_total in sorted_vms 
+                     if any(v.vm_name == vm_name and v.is_powered_on for v in assessment.vms)]
+        
+        for i, (vm_name, vm_total) in enumerate(active_vms):
             lines = vm_lines[vm_name]
             vm = next((v for v in assessment.vms if v.vm_name == vm_name), None)
             
-            # VM Header
+            # VM Header - only show powered-on VMs
             os_type = vm.os_type.value if vm and vm.os_type else "Unknown"
-            power_state = "🟢 POWERED ON" if vm and vm.is_powered_on else "🔴 POWERED OFF"
             cpu_mem = f"{vm.cpu_cores} vCPU / {vm.memory_gb:.0f} GB RAM" if vm else "N/A"
             
-            vm_header = f"#{i+1:>2} {vm_name} | {power_state} | {os_type} | {cpu_mem} | Monthly: €{vm_total:,.2f}"
+            vm_header = f"#{i+1:>2} {vm_name} | 🟢 ACTIVE | {os_type} | {cpu_mem} | Monthly: €{vm_total:,.2f}"
             console.print(Text(vm_header, style="bold white on blue"))
             
             # VM Component Table
@@ -525,14 +537,15 @@ class SimplifiedReportGenerator:
             f.write("=" * 100 + "\n")
             f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Currency: {bom.currency} | Source: RVTools Export\n\n")
             
-            # Executive Summary using tabulate
-            powered_on = len([vm for vm in assessment.vms if vm.is_powered_on])
-            powered_off = len(assessment.vms) - powered_on
+            # Executive Summary using tabulate - only powered-on VMs
+            powered_on_vms = [vm for vm in assessment.vms if vm.is_powered_on]
+            total_vms = len(assessment.vms)
+            powered_off = total_vms - len(powered_on_vms)
             
             summary_data = [
-                ["Total Virtual Machines", f"{len(assessment.vms):,}"],
-                ["├─ Powered ON", f"{powered_on:,} VMs"],
-                ["└─ Powered OFF", f"{powered_off:,} VMs"],
+                ["Active Virtual Machines", f"{len(powered_on_vms):,}"],
+                ["Powered OFF (excluded)", f"{powered_off:,} VMs"],
+                ["Total VMs in Environment", f"{total_vms:,}"],
                 ["Total Monthly Cost", f"€{bom.total_monthly_cost:,.2f}"],
                 ["Total Annual Cost", f"€{bom.total_monthly_cost * 12:,.2f}"]
             ]
@@ -541,9 +554,9 @@ class SimplifiedReportGenerator:
             f.write(tabulate(summary_data, tablefmt="grid", colalign=("left", "right")))
             f.write("\n\n")
             
-            # OS Distribution - merge Unix into Linux
+            # OS Distribution - only powered-on VMs, merge Unix into Linux
             os_counts = {}
-            for vm in assessment.vms:
+            for vm in powered_on_vms:
                 os_name = vm.os_type.value if vm.os_type else "Unknown"
                 # Merge Unix systems into Linux category
                 if os_name == "Unix":
@@ -555,14 +568,14 @@ class SimplifiedReportGenerator:
             sorted_os = sorted(os_counts.items(), key=lambda x: x[1], reverse=True)
             
             for os_name, count in sorted_os:
-                percentage = (count / len(assessment.vms)) * 100 if assessment.vms else 0
+                percentage = (count / len(powered_on_vms)) * 100 if powered_on_vms else 0
                 os_data.append([os_name, f"{count:,}", f"{percentage:.1f}%"])
             
             # Add totals row
             os_data.append(["", "", ""])
-            os_data.append(["TOTAL", f"{len(assessment.vms):,}", "100.0%"])
+            os_data.append(["TOTAL", f"{len(powered_on_vms):,}", "100.0%"])
             
-            f.write("OPERATING SYSTEM DISTRIBUTION\n")
+            f.write("OPERATING SYSTEM DISTRIBUTION (ACTIVE VMs)\n")
             f.write(tabulate(os_data, headers=["OS Type", "Count", "Percentage"], tablefmt="grid"))
             f.write("\n\n")
             
@@ -594,19 +607,22 @@ class SimplifiedReportGenerator:
             # Sort VMs by cost (descending)
             sorted_vms = sorted(vm_totals.items(), key=lambda x: x[1], reverse=True)
             
-            f.write("DETAILED VM COST BREAKDOWN\n")
+            f.write("DETAILED VM COST BREAKDOWN (ACTIVE VMs ONLY)\n")
             f.write("=" * 100 + "\n")
             
-            for i, (vm_name, vm_total) in enumerate(sorted_vms):
+            # Filter to only show powered-on VMs
+            active_vms = [(vm_name, vm_total) for vm_name, vm_total in sorted_vms 
+                         if any(v.vm_name == vm_name and v.is_powered_on for v in assessment.vms)]
+            
+            for i, (vm_name, vm_total) in enumerate(active_vms):
                 lines = vm_lines[vm_name]
                 vm = next((v for v in assessment.vms if v.vm_name == vm_name), None)
                 
-                # VM Header
+                # VM Header - only powered-on VMs
                 os_type = vm.os_type.value if vm and vm.os_type else "Unknown"
-                power_state = "POWERED ON" if vm and vm.is_powered_on else "POWERED OFF"
                 cpu_mem = f"{vm.cpu_cores} vCPU / {vm.memory_gb:.0f} GB RAM" if vm else "N/A"
                 
-                f.write(f"\n#{i+1:>2} {vm_name} | {power_state} | {os_type} | {cpu_mem} | Monthly: €{vm_total:,.2f}\n")
+                f.write(f"\n#{i+1:>2} {vm_name} | ACTIVE | {os_type} | {cpu_mem} | Monthly: €{vm_total:,.2f}\n")
                 f.write("-" * 100 + "\n")
                 
                 # VM Component Table
@@ -637,27 +653,28 @@ class SimplifiedReportGenerator:
             f.write(f"Oracle Cloud Infrastructure Pricing - {datetime.now().strftime('%Y-%m-%d')}\n")
     
     def _generate_csv_report(self, bom: BillOfMaterials, assessment: VMAssessment, output_file: Path):
-        """Generate CSV report for analysis"""
+        """Generate CSV report for analysis - only powered-on VMs"""
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             
             # Headers
             writer.writerow([
-                'VM_Name', 'OS_Type', 'Power_State', 'CPU_Cores', 'Memory_GB', 
+                'VM_Name', 'OS_Type', 'Status', 'CPU_Cores', 'Memory_GB', 
                 'Storage_GB', 'Network_Adapters', 'Component_Type', 'Component_Description',
                 'Quantity', 'Unit', 'Unit_Price_EUR', 'Total_Cost_EUR', 'Pricing_Model'
             ])
             
-            # Data rows
+            # Data rows - only powered-on VMs
             for line in bom.line_items:
                 # Find corresponding VM
                 vm = next((v for v in assessment.vms if v.vm_name == line.vm_name), None)
                 
-                if vm:
+                # Only include powered-on VMs
+                if vm and vm.is_powered_on:
                     writer.writerow([
                         line.vm_name,
                         vm.os_type.value if vm.os_type else 'Unknown',
-                        'Powered_On' if vm.is_powered_on else 'Powered_Off',
+                        'Active',
                         vm.cpu_cores,
                         vm.memory_gb,
                         vm.total_storage_gb,
