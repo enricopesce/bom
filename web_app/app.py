@@ -98,7 +98,7 @@ async def periodic_cleanup():
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("simple.html", {"request": request})
 
 @app.get("/favicon.ico")
 async def favicon():
@@ -111,25 +111,21 @@ async def help_page(request: Request):
 @app.post("/upload")
 async def upload_file(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(None),
-    formats: str = Form(None)
+    file: UploadFile = File(None)
 ):
-    logger.info(f"Upload request received - File: {getattr(file, 'filename', 'NO_FILENAME') if file else 'NO_FILE'}, Size: {getattr(file, 'size', 'NO_SIZE') if file else 'NO_FILE'}, Formats: {formats}")
+    logger.info(f"Upload request received - File: {getattr(file, 'filename', 'NO_FILENAME') if file else 'NO_FILE'}, Size: {getattr(file, 'size', 'NO_SIZE') if file else 'NO_FILE'}")
     
     try:
         # Validate parameters
         if not file:
             logger.error("No file provided in request")
             raise HTTPException(status_code=400, detail="No file provided")
-            
-        if not formats:
-            logger.error("No formats provided in request")
-            raise HTTPException(status_code=400, detail="No report formats selected")
         
         # Validate file
-        if not file.filename or not file.filename.endswith('.zip'):
+        allowed_extensions = ('.zip', '.xls', '.xlsx')
+        if not file.filename or not file.filename.lower().endswith(allowed_extensions):
             logger.error(f"Invalid file type: {file.filename}")
-            raise HTTPException(status_code=400, detail="Only ZIP files are allowed")
+            raise HTTPException(status_code=400, detail="Only ZIP, XLS, or XLSX files are allowed")
         
         # Read file content to check size
         content = await file.read()
@@ -160,15 +156,11 @@ async def upload_file(
     
     logger.info(f"File saved to: {file_path}")
     
-    # Parse selected formats
-    selected_formats = [f.strip() for f in formats.split(',') if f.strip()]
-    
     # Start background processing
     background_tasks.add_task(
         process_vm_assessment, 
         session_id, 
-        file_path, 
-        selected_formats
+        file_path
     )
     
     return {"session_id": session_id, "status": "started"}
@@ -187,9 +179,9 @@ async def get_status(session_id: str):
         "error": session.error
     }
     
-    # Include summary if available
+    # Include summary if available and merge into response
     if hasattr(session, 'summary') and session.summary:
-        response_data["summary"] = session.summary
+        response_data.update(session.summary)
     
     return response_data
 
@@ -231,7 +223,7 @@ async def download_file(session_id: str, filename: str):
         media_type='application/octet-stream'
     )
 
-async def process_vm_assessment(session_id: str, file_path: str, formats: List[str]):
+async def process_vm_assessment(session_id: str, file_path: str):
     session = processing_sessions[session_id]
     logger.info(f"Starting background processing for session {session_id}")
     
@@ -242,6 +234,7 @@ async def process_vm_assessment(session_id: str, file_path: str, formats: List[s
         
         # Import VM assessment modules
         from processors.factory import ProcessorFactory
+        from simple_reports import SimplifiedReportGenerator
         
         session.message = "Processing VM data..."
         session.progress = 30
@@ -267,48 +260,21 @@ async def process_vm_assessment(session_id: str, file_path: str, formats: List[s
         session.message = "Generating reports..."
         session.progress = 80
         
-        # Generate reports based on selected formats
-        report_generators = {
-            'csv': CSVReportGenerator(),
-            'excel': ExcelReportGenerator(),
-            'text': TextReportGenerator(),
-            'json': JSONReportGenerator(),
-            'sales-excel': SalesExcelReportGenerator()
-        }
+        # Generate all three optimized reports
+        report_generator = SimplifiedReportGenerator(output_dir)
+        generated_files = report_generator.generate_all_reports(bom)
         
-        generated_files = []
-        for format_name in formats:
-            if format_name in report_generators:
-                generator = report_generators[format_name]
-                
-                # Generate assessment report
-                assessment_filename = f"vm_assessment_{timestamp}.{generator.file_extension if hasattr(generator, 'file_extension') else 'txt'}"
-                assessment_filepath = os.path.join(output_dir, assessment_filename)
-                
-                assessment_file = generator.generate_assessment_report(assessment, assessment_filepath)
-                if assessment_file:
-                    generated_files.append(os.path.basename(assessment_file))
-                
-                # Generate BOM report if available
-                if bom:
-                    bom_filename = f"vm_bom_{timestamp}.{generator.file_extension if hasattr(generator, 'file_extension') else 'txt'}"
-                    bom_filepath = os.path.join(output_dir, bom_filename)
-                    
-                    bom_file = generator.generate_bom_report(bom, bom_filepath)
-                    if bom_file:
-                        generated_files.append(os.path.basename(bom_file))
-        
-        session.files = generated_files
+        session.files = list(generated_files.values())
         session.progress = 100
         session.status = "completed"
         session.message = f"Successfully generated {len(generated_files)} report files"
         
-        # Calculate summary stats
+        # Calculate summary stats for frontend
         total_cost = bom.total_monthly_cost if bom else 0
         session.summary = {
             'total_vms': len(assessment.vms),
-            'powered_on_vms': len([vm for vm in assessment.vms if vm.power_state.value == 'poweredOn']),
-            'total_monthly_cost': f"EUR {total_cost:,.2f}",
+            'powered_on_vms': len([vm for vm in assessment.vms if vm.is_powered_on]),
+            'total_cost': f"{total_cost:.2f}",
             'formats_generated': len(generated_files)
         }
         
