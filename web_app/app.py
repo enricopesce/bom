@@ -262,7 +262,7 @@ async def process_vm_assessment(session_id: str, file_path: str):
         
         # Generate all three optimized reports
         report_generator = SimplifiedReportGenerator(output_dir)
-        generated_files = report_generator.generate_all_reports(bom)
+        generated_files = report_generator.generate_all_reports(bom, assessment)
         
         session.files = list(generated_files.values())
         session.progress = 100
