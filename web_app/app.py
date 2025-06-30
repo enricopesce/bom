@@ -30,13 +30,8 @@ logger = logging.getLogger(__name__)
 # Import our VM assessment modules (now in web_app)
 from processors.factory import ProcessorFactory
 from pricing.oracle_cloud_pricing import OracleCloudPricingCalculator
-from reports.report_generators import (
-    CSVReportGenerator, 
-    ExcelReportGenerator, 
-    TextReportGenerator, 
-    JSONReportGenerator,
-    SalesExcelReportGenerator
-)
+# Use simplified report generator instead
+from simple_reports import SimplifiedReportGenerator
 
 app = FastAPI(
     title="VM Assessment BOM Generator",

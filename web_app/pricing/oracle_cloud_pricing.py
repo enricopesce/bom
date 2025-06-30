@@ -100,14 +100,14 @@ class OracleCloudPricingCalculator(CloudPricingCalculator):
         
         ocpu_count = self._calculate_ocpu_count(vm.cpu_cores)
         
-        # 1. Compute (OCPU)
+        # 1. Compute (OCPU) - VM.Standard.E4.Flex pricing
         if ocpu_count > 0:
-            ocpu_hourly = self.pricing_config["compute_pricing"]["ocpu"]["unit_price"]
+            ocpu_hourly = self.pricing_config["compute_pricing"]["ocpu_price"]
             ocpu_monthly = ocpu_hourly * self.hours_per_month
             
             cost_items.append({
                 "component_type": "Compute",
-                "description": f"OCPU ({ocpu_count} OCPU for {vm.cpu_cores} vCPU)",
+                "description": f"OCPU ({ocpu_count} OCPU for {vm.cpu_cores} vCPU) - VM.Standard.E4.Flex",
                 "quantity": float(ocpu_count),
                 "unit": "OCPU",
                 "unit_price": ocpu_monthly,
@@ -115,14 +115,14 @@ class OracleCloudPricingCalculator(CloudPricingCalculator):
                 "pricing_model": "on-demand"
             })
         
-        # 2. Memory
+        # 2. Memory - VM.Standard.E4.Flex pricing
         if vm.memory_gb > 0:
-            memory_hourly = self.pricing_config["memory_pricing"]["memory_gb"]["unit_price"]
+            memory_hourly = self.pricing_config["compute_pricing"]["memory_gb_price"]
             memory_monthly = memory_hourly * self.hours_per_month
             
             cost_items.append({
                 "component_type": "Memory",
-                "description": f"Memory ({vm.memory_gb:.1f} GB)",
+                "description": f"Memory ({vm.memory_gb:.1f} GB) - VM.Standard.E4.Flex",
                 "quantity": vm.memory_gb,
                 "unit": "GB",
                 "unit_price": memory_monthly,
@@ -191,12 +191,17 @@ class OracleCloudPricingCalculator(CloudPricingCalculator):
     
     def get_pricing_summary(self) -> Dict[str, Any]:
         """Get summary of current pricing configuration"""
+        compute_pricing = self.pricing_config["compute_pricing"]
+        
         return {
             "provider": self.provider_name,
             "currency": self.currency,
             "hours_per_month": self.hours_per_month,
-            "compute_hourly": self.pricing_config["compute_pricing"]["ocpu"]["unit_price"],
-            "memory_hourly": self.pricing_config["memory_pricing"]["memory_gb"]["unit_price"],
+            "compute": {
+                "ocpu_hourly": compute_pricing["ocpu_price"],
+                "memory_hourly": compute_pricing["memory_gb_price"],
+                "description": compute_pricing["description"]
+            },
             "storage_monthly": self.pricing_config["storage_pricing"]["block_volume"]["unit_price"],
             "vpu_monthly": self.pricing_config["storage_pricing"]["block_volume_vpu"]["unit_price"],
             "windows_license_hourly": self.pricing_config["licensing_pricing"]["windows_server"]["unit_price"]

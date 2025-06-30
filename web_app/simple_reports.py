@@ -19,6 +19,14 @@ try:
 except ImportError:
     EXCEL_AVAILABLE = False
 
+# Enhanced Excel generation
+try:
+    import xlsxwriter
+    from enhanced_excel import EnhancedExcelGenerator
+    ENHANCED_EXCEL_AVAILABLE = True
+except ImportError:
+    ENHANCED_EXCEL_AVAILABLE = False
+
 # Professional formatting libraries
 try:
     from rich.console import Console
@@ -34,6 +42,7 @@ except ImportError:
     FORMATTING_AVAILABLE = False
 
 from models.vm_models import VMAssessment, BillOfMaterials, OSType
+from currency_utils import format_currency, get_currency_symbol, get_excel_currency_format
 
 
 class SimplifiedReportGenerator:
@@ -60,8 +69,13 @@ class SimplifiedReportGenerator:
         # Create base filename from source
         base_name = self._create_base_filename(source_filename)
         
-        # Generate Excel report
-        if EXCEL_AVAILABLE:
+        # Generate Excel report - Use enhanced version if available
+        if ENHANCED_EXCEL_AVAILABLE:
+            excel_file = self.output_dir / f"{base_name}_BOM_Report.xlsx"
+            enhanced_generator = EnhancedExcelGenerator(str(self.output_dir))
+            enhanced_generator.generate_excel_report(bom, assessment, excel_file)
+            files['excel'] = str(excel_file)
+        elif EXCEL_AVAILABLE:
             excel_file = self.output_dir / f"{base_name}_BOM_Report.xlsx"
             self._generate_excel_report(bom, assessment, excel_file)
             files['excel'] = str(excel_file)
@@ -163,7 +177,7 @@ class SimplifiedReportGenerator:
         ws["B6"] = total_vms
         
         ws["A7"] = "Total Monthly Cost:"
-        ws["B7"] = f"€{bom.total_monthly_cost:.2f}"
+        ws["B7"] = format_currency(bom.total_monthly_cost, bom.currency)
         
         ws["A8"] = "Currency:"
         ws["B8"] = bom.currency
@@ -194,7 +208,7 @@ class SimplifiedReportGenerator:
         row += 2
         for comp_type, cost in component_costs.items():
             ws[f"A{row}"] = f"  {comp_type}:"
-            ws[f"B{row}"] = f"€{cost:.2f}"
+            ws[f"B{row}"] = format_currency(cost, bom.currency)
             row += 1
         
         # Auto-adjust column widths
@@ -217,7 +231,7 @@ class SimplifiedReportGenerator:
         # Headers
         headers = [
             "VM Name", "OS Type", "Status", "CPU Cores", "Memory (GB)", 
-            "Storage (GB)", "Network Adapters", "Monthly Cost (€)"
+            "Storage (GB)", "Network Adapters", f"Monthly Cost ({get_currency_symbol(bom.currency)})"
         ]
         
         for col, header in enumerate(headers, 1):

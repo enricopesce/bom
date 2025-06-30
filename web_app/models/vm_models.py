@@ -173,7 +173,7 @@ class BOMLineItem:
     unit: str  # e.g., "OCPU", "GB", "Instance"
     unit_price: float
     total_cost: float
-    currency: str = "USD"
+    currency: str = "EUR"
     pricing_model: Optional[str] = None  # e.g., "on-demand", "reserved"
     
     @property
@@ -254,7 +254,7 @@ class BillOfMaterials:
     """
     assessment_id: str
     line_items: List[BOMLineItem] = field(default_factory=list)
-    currency: str = "USD"
+    currency: str = "EUR"
     pricing_date: datetime = field(default_factory=datetime.now)
     pricing_source: Optional[str] = None
     notes: Optional[str] = None

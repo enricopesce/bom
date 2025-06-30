@@ -4,36 +4,29 @@
 
 ![Web Interface](https://img.shields.io/badge/Interface-Web%20App-blue)
 ![Container](https://img.shields.io/badge/Container-Ready-green)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-Native-purple)
+![Podman](https://img.shields.io/badge/Podman-Native-purple)
 ![License](https://img.shields.io/badge/License-Enterprise-orange)
 
 ## 🚀 **Quick Start**
 
-### **1. Development Mode**
+### **1. Local Development**
 ```bash
-# Start development server
-make dev
+# Direct Python development
+./scripts/dev-local.sh
 # Access: http://localhost:8000
 ```
 
-### **2. Container Deployment**
+### **2. Container Development**
 ```bash
-# Build container
-make build
-
-# Run locally
-make run
-# Access: http://localhost:8000
+# Build and run with Podman
+./scripts/dev-simple.sh
+# Access: http://localhost:8080
 ```
 
-### **3. Kubernetes Deployment**
+### **3. Testing**
 ```bash
-# Deploy to cluster
-make deploy
-
-# Access via port-forward
-make port-forward
-# Access: http://localhost:8000
+# Test container deployment
+./scripts/test-simple.sh
 ```
 
 ## 📋 **Features**
@@ -55,12 +48,11 @@ make port-forward
 - ✅ **Mobile Friendly**: Works on all devices
 
 ### **🏗️ Enterprise Ready**
-- ✅ **Container Native**: Podman/Docker/Buildah support
-- ✅ **Kubernetes Ready**: Complete K8s manifests
-- ✅ **High Availability**: Auto-scaling and health checks
-- ✅ **Security**: Non-root containers, resource limits
-- ✅ **Monitoring**: Prometheus metrics ready
-- ✅ **CI/CD Ready**: Complete automation
+- ✅ **Container Native**: Podman support
+- ✅ **Lightweight**: No complex orchestration needed
+- ✅ **Secure**: Non-root containers, resource limits
+- ✅ **Simple**: Easy local development and testing
+- ✅ **Professional**: Production-ready reports and analysis
 
 ## 🏗️ **Architecture**
 
@@ -114,20 +106,14 @@ vm-assessment-bom/
 ├── 🐳 Container & Deployment
 │   ├── Containerfile             # Container definition
 │   ├── requirements.txt          # Python dependencies
-│   ├── .containerignore          # Build optimization
-│   └── k8s/                      # Kubernetes manifests
-│       ├── namespace.yaml        # Namespace setup
-│       ├── deployment.yaml       # Application deployment
-│       ├── service.yaml          # Service definitions
-│       ├── ingress.yaml          # Ingress configuration
-│       └── *.yaml               # HPA, PDB, ConfigMaps
+│   └── .containerignore          # Build optimization
 │
 ├── 🔧 Scripts & Automation
-│   ├── Makefile                  # Build & deploy automation
 │   └── scripts/
-│       ├── build-image.sh        # Multi-tool container build
-│       ├── deploy-k8s.sh         # Kubernetes deployment
-│       └── test-local.sh         # Local testing
+│       ├── dev-local.sh          # Direct Python development
+│       ├── dev-simple.sh         # Podman container development
+│       ├── test-local.sh         # Local testing
+│       └── test-simple.sh        # Container testing
 │
 └── 📖 Documentation
     ├── README.md                 # This file
@@ -139,89 +125,72 @@ vm-assessment-bom/
 
 ### **Prerequisites**
 - Python 3.11+
-- Container tool (Podman/Docker/Buildah)
-- kubectl (for Kubernetes)
+- Podman (open source container tool)
 
 ### **Local Development**
+
+#### **Option 1: Direct Python (fastest)**
 ```bash
 # Clone repository
 git clone <repository-url>
-cd vm-assessment-bom
+cd rvtools
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Start development server
-make dev
+./scripts/dev-local.sh
 
 # Access application
 open http://localhost:8000
 ```
 
+#### **Option 2: Container (production-like)**
+```bash
+# Build and run with Podman
+./scripts/dev-simple.sh
+
+# Access application
+open http://localhost:8080
+```
+
 ### **Testing**
 ```bash
-# Run tests
-make test
-
-# Test container locally
-make build
-make run
-
-# Run comprehensive tests
+# Test direct Python setup
 ./scripts/test-local.sh
+
+# Test container setup
+./scripts/test-simple.sh
 ```
 
 ## 📦 **Deployment Options**
 
-### **1. Local Container**
+### **1. Local Development**
 ```bash
-# Build and run
-make build run
+# Direct Python (fastest)
+./scripts/dev-local.sh
 
-# With custom configuration
-HOST=0.0.0.0 PORT=8080 make run
+# Container-based (production-like)
+./scripts/dev-simple.sh
 ```
 
-### **2. Kubernetes**
+### **2. Production Container**
 ```bash
-# Basic deployment
-make deploy
+# Build container
+podman build -t vm-assessment-bom .
 
-# Production deployment
-NAMESPACE=production IMAGE_TAG=v1.0.0 make deploy-with-ingress
-
-# Monitor deployment
-make status logs
+# Run container
+podman run -d -p 8080:8080 \
+  -v ./uploads:/app/uploads \
+  -v ./reports:/app/reports \
+  vm-assessment-bom
 ```
 
-### **3. Cloud Platforms**
-
-#### **AWS EKS**
-```bash
-# Configure kubectl for EKS
-aws eks update-kubeconfig --name your-cluster
-
-# Deploy
-make deploy
-```
-
-#### **Google GKE**
-```bash
-# Configure kubectl for GKE
-gcloud container clusters get-credentials your-cluster
-
-# Deploy
-make deploy
-```
-
-#### **Azure AKS**
-```bash
-# Configure kubectl for AKS
-az aks get-credentials --name your-cluster --resource-group your-rg
-
-# Deploy
-make deploy
-```
+### **3. Server Deployment**
+For production deployment, use any container orchestration platform:
+- **Podman** on single servers
+- **Docker Swarm** for multi-node
+- **Kubernetes** for enterprise scale
 
 ## ⚙️ **Configuration**
 
@@ -273,35 +242,44 @@ Edit `web_app/pricing.json` to customize:
 
 ### **Container Commands**
 ```bash
-make help              # Show all commands
-make build             # Build container
-make run               # Run locally
-make stop              # Stop container
-make inspect           # Inspect image
-make clean             # Clean up
+# Build container
+podman build -t vm-assessment-bom .
+
+# Run container
+podman run -d --name vm-assessment-dev -p 8080:8080 vm-assessment-bom
+
+# View logs
+podman logs vm-assessment-dev
+
+# Stop container
+podman stop vm-assessment-dev
+
+# Remove container
+podman rm vm-assessment-dev
 ```
 
-### **Kubernetes Commands**
+### **Development Scripts**
 ```bash
-make deploy            # Deploy to cluster
-make status            # Check deployment
-make logs              # View logs
-make port-forward      # Local access
-make shell             # Pod shell access
-make rollback          # Rollback deployment
-make undeploy          # Remove deployment
+# Start development
+./scripts/dev-simple.sh
+
+# Test application
+./scripts/test-simple.sh
+
+# Stop development
+podman stop vm-assessment-dev
 ```
 
 ### **Monitoring**
 ```bash
 # Application logs
-make logs
+podman logs vm-assessment-dev
 
-# Resource usage
-kubectl top pods -n vm-assessment
+# Container stats
+podman stats vm-assessment-dev
 
 # Admin interface
-curl http://localhost:8000/admin/sessions
+curl http://localhost:8080/admin/sessions
 ```
 
 ## 🚨 **Troubleshooting**
@@ -310,14 +288,15 @@ curl http://localhost:8000/admin/sessions
 
 #### **Build Problems**
 ```bash
-# Check prerequisites
-make check-prereqs
+# Check Podman installation
+podman --version
 
 # Clean and rebuild
-make clean build
+podman rmi vm-assessment-bom || true
+podman build -t vm-assessment-bom .
 
-# Use different build tool
-BUILD_TOOL=docker make build
+# Check container logs
+podman logs vm-assessment-dev
 ```
 
 #### **Upload Failures**
@@ -326,7 +305,7 @@ BUILD_TOOL=docker make build
 - Ensure RVTools export is complete
 
 #### **Processing Errors**
-- Check application logs: `make logs`
+- Check application logs: `podman logs vm-assessment-dev`
 - Verify pricing.json configuration
 - Ensure sufficient resources
 
@@ -375,8 +354,8 @@ Enterprise License - See license terms for usage restrictions.
 Your VM Assessment BOM Generator is ready for professional use:
 
 ✅ **Modern web interface** with professional design  
-✅ **Enterprise container deployment** with Kubernetes  
+✅ **Simple container deployment** with Podman  
 ✅ **Production-ready** with security and monitoring  
 ✅ **Sales-ready reports** with ROI analysis  
 
-**Start now**: `make dev` 🎉
+**Start now**: `./scripts/dev-simple.sh` 🎉

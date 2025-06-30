@@ -1,47 +1,25 @@
 {
   "compute_pricing": {
-    "ocpu": {
-      "unit_price": 0.0425,
-      "description": "Oracle CPU (OCPU) per hour"
-    },
-    "vm_standard_e4": {
-      "ocpu_price": 0.0425,
-      "memory_gb_price": 0.00694,
-      "description": "VM.Standard.E4.Flex"
-    },
-    "vm_standard_e3": {
-      "ocpu_price": 0.0340,
-      "memory_gb_price": 0.00556,
-      "description": "VM.Standard.E3.Flex"
-    }
-  },
-  "memory_pricing": {
-    "memory_gb": {
-      "unit_price": 0.00694,
-      "description": "Memory per GB per hour"
-    }
+    "ocpu_price": 0.02325,
+    "memory_gb_price": 0.001395,
+    "description": "VM.Standard.E4.Flex"
   },
   "storage_pricing": {
     "block_volume": {
-      "unit_price": 0.0425,
+      "unit_price": 0.023715,
       "description": "Block Volume per GB per month"
     },
     "block_volume_vpu": {
-      "unit_price": 0.0255,
+      "unit_price": 0.001581,
       "description": "Block Volume Performance Units per VPU per month"
     }
   },
   "licensing_pricing": {
     "windows_server": {
-      "unit_price": 0.0292,
+      "unit_price": 0.08556,
       "description": "Windows Server License per OCPU per hour"
-    },
-    "oracle_database": {
-      "unit_price": 0.8750,
-      "description": "Oracle Database License per OCPU per hour"
     }
   },
   "currency": "EUR",
-  "region": "eu-frankfurt-1",
   "last_updated": "2024-12-01"
 }
